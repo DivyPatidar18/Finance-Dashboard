@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Ledger — Personal Finance Tracker</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0e0f0f;
+      --surface:   #161818;
+      --card:      #1c1f1f;
+      --border:    #2a2d2d;
+      --accent:    #c8f04d;
+      --text:      #e8eae0;
+      --muted:     #6b6f6b;
+      --income:    #4dffc0;
+      --expense:   #f04d6e;
+      --radius:    14px;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Mono', monospace;
+      min-height: 100vh;
+      padding: 0 0 80px;
+    }
+
+    header {
+      position: sticky; top: 0; z-index: 100;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      padding: 18px 40px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .logo {
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.55rem; letter-spacing: -.5px; color: var(--accent);
+    }
+    .logo span { color: var(--text); font-style: italic; }
+    .header-date { font-size: .72rem; color: var(--muted); letter-spacing: .08em; text-transform: uppercase; }
+
+    .wrapper { max-width: 960px; margin: 0 auto; padding: 36px 24px 0; }
+
+    .summary { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; margin-bottom: 36px; }
+    .summary-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 22px 24px;
+      position: relative; overflow: hidden;
+      animation: fadeUp .5s ease both;
+    }
+    .summary-card:nth-child(2) { animation-delay: .08s; }
+    .summary-card:nth-child(3) { animation-delay: .16s; }
+    .summary-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; }
+    .summary-card.income::before  { background: var(--income); }
+    .summary-card.expense::before { background: var(--expense); }
+    .summary-card.balance::before { background: var(--accent); }
+    .card-label { font-size:.68rem; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); margin-bottom:10px; }
+    .card-value { font-family:'DM Serif Display',serif; font-size:2rem; line-height:1; }
+    .card-value.income  { color: var(--income); }
+    .card-value.expense { color: var(--expense); }
+    .card-value.balance { color: var(--accent); }
+    .card-value.negative { color: var(--expense) !important; }
+
+    .budget-bar-wrap {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 20px 24px;
+      margin-bottom: 36px; animation: fadeUp .5s .24s ease both;
+    }
+    .bar-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; font-size:.72rem; }
+    .bar-label { text-transform:uppercase; letter-spacing:.1em; color:var(--muted); }
+    .bar-pct { color: var(--accent); font-weight:500; }
+    .bar-track { height:10px; background:var(--border); border-radius:99px; overflow:hidden; }
+    .bar-fill {
+      height:100%; border-radius:99px;
+      background: linear-gradient(90deg, var(--income), var(--accent));
+      transition: width .6s cubic-bezier(.34,1.56,.64,1);
+    }
+    .bar-fill.danger { background: linear-gradient(90deg, var(--expense), #ff9a3c); }
+
+    .main-grid { display:grid; grid-template-columns:1fr 1.4fr; gap:24px; }
+
+    .form-panel {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 28px 24px;
+      animation: fadeUp .5s .32s ease both;
+    }
+    .panel-title { font-family:'DM Serif Display',serif; font-size:1.15rem; margin-bottom:22px; color:var(--text); }
+
+    .type-toggle { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:20px; }
+    .toggle-btn {
+      padding:10px; border-radius:8px; border:1px solid var(--border);
+      background:transparent; color:var(--muted);
+      font-family:'DM Mono',monospace; font-size:.78rem;
+      letter-spacing:.08em; text-transform:uppercase;
+      cursor:pointer; transition:all .2s;
+    }
+    .toggle-btn.active.income  { background:rgba(77,255,192,.12); border-color:var(--income); color:var(--income); }
+    .toggle-btn.active.expense { background:rgba(240,77,110,.12); border-color:var(--expense); color:var(--expense); }
+    .toggle-btn:hover:not(.active) { border-color:var(--muted); color:var(--text); }
+
+    .field { margin-bottom:16px; }
+    .field label { display:block; font-size:.7rem; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); margin-bottom:7px; }
+    .field input, .field select {
+      width:100%; background:var(--surface); border:1px solid var(--border);
+      border-radius:8px; padding:11px 14px; color:var(--text);
+      font-family:'DM Mono',monospace; font-size:.88rem;
+      transition:border-color .2s; outline:none; appearance:none;
+    }
+    .field input:focus, .field select:focus { border-color:var(--accent); }
+
+    .add-btn {
+      width:100%; padding:13px; background:var(--accent); color:#0e0f0f;
+      border:none; border-radius:8px; font-family:'DM Mono',monospace;
+      font-size:.82rem; font-weight:500; letter-spacing:.1em; text-transform:uppercase;
+      cursor:pointer; transition:transform .15s, opacity .15s;
+    }
+    .add-btn:hover  { opacity:.88; }
+    .add-btn:active { transform:scale(.97); }
+
+    .modal-overlay {
+      display:none; position:fixed; inset:0; z-index:200;
+      background:rgba(0,0,0,.65); backdrop-filter:blur(4px);
+      align-items:center; justify-content:center;
+    }
+    .modal-overlay.open { display:flex; }
+    .modal {
+      background:var(--card); border:1px solid var(--border);
+      border-radius:var(--radius); padding:30px 28px; width:min(420px,92vw);
+      animation:popIn .25s cubic-bezier(.34,1.56,.64,1);
+    }
+    @keyframes popIn { from{opacity:0;transform:scale(.88)} to{opacity:1;transform:scale(1)} }
+    .modal-title { font-family:'DM Serif Display',serif; font-size:1.1rem; margin-bottom:22px; }
+    .modal-actions { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:4px; }
+    .btn-cancel {
+      padding:12px; border-radius:8px; border:1px solid var(--border);
+      background:transparent; color:var(--muted); font-family:'DM Mono',monospace;
+      font-size:.78rem; letter-spacing:.08em; text-transform:uppercase; cursor:pointer; transition:border-color .2s;
+    }
+    .btn-cancel:hover { border-color:var(--text); color:var(--text); }
+    .btn-save {
+      padding:12px; border-radius:8px; background:var(--accent);
+      border:none; color:#0e0f0f; font-family:'DM Mono',monospace;
+      font-size:.78rem; font-weight:500; letter-spacing:.08em; text-transform:uppercase;
+      cursor:pointer; transition:opacity .15s;
+    }
+    .btn-save:hover { opacity:.88; }
+
+    .txn-panel {
+      background:var(--card); border:1px solid var(--border);
+      border-radius:var(--radius); padding:28px 24px;
+      animation:fadeUp .5s .4s ease both;
+    }
+    .txn-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; }
+    .filter-row { display:flex; gap:8px; margin-bottom:16px; }
+    .filter-btn {
+      padding:5px 12px; border-radius:99px; border:1px solid var(--border);
+      background:transparent; color:var(--muted); font-family:'DM Mono',monospace;
+      font-size:.68rem; letter-spacing:.08em; text-transform:uppercase; cursor:pointer; transition:all .15s;
+    }
+    .filter-btn.active { background:var(--accent); border-color:var(--accent); color:#0e0f0f; }
+    .clear-btn {
+      font-size:.68rem; letter-spacing:.08em; text-transform:uppercase;
+      color:var(--muted); background:none; border:none; cursor:pointer;
+      font-family:'DM Mono',monospace; transition:color .15s;
+    }
+    .clear-btn:hover { color:var(--expense); }
+
+    .txn-list { display:flex; flex-direction:column; gap:10px; max-height:460px; overflow-y:auto; }
+    .txn-list::-webkit-scrollbar { width:4px; }
+    .txn-list::-webkit-scrollbar-track { background:transparent; }
+    .txn-list::-webkit-scrollbar-thumb { background:var(--border); border-radius:99px; }
+
+    .txn-item {
+      display:flex; align-items:center; gap:14px;
+      background:var(--surface); border:1px solid var(--border);
+      border-radius:10px; padding:13px 16px;
+      transition:transform .15s, border-color .15s;
+      animation:slideIn .3s ease both;
+    }
+    .txn-item:hover { transform:translateX(3px); border-color:var(--muted); }
+    @keyframes slideIn { from{opacity:0;transform:translateX(-12px)} to{opacity:1;transform:translateX(0)} }
+
+    .txn-dot { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
+    .txn-dot.income  { background:var(--income); box-shadow:0 0 8px var(--income); }
+    .txn-dot.expense { background:var(--expense); box-shadow:0 0 8px var(--expense); }
+
+    .txn-info { flex:1; min-width:0; }
+    .txn-name { font-size:.88rem; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .txn-meta { font-size:.68rem; color:var(--muted); margin-top:2px; }
+    .txn-amount { font-family:'DM Serif Display',serif; font-size:1rem; flex-shrink:0; }
+    .txn-amount.income  { color:var(--income); }
+    .txn-amount.expense { color:var(--expense); }
+    .txn-actions { display:flex; gap:6px; flex-shrink:0; }
+    .icon-btn {
+      width:28px; height:28px; border-radius:6px; border:1px solid var(--border);
+      background:transparent; color:var(--muted); cursor:pointer; font-size:.8rem;
+      display:flex; align-items:center; justify-content:center; transition:all .15s;
+    }
+    .icon-btn.edit:hover { border-color:var(--accent); color:var(--accent); }
+    .icon-btn.del:hover  { border-color:var(--expense); color:var(--expense); }
+
+    .empty-state { text-align:center; padding:50px 20px; color:var(--muted); font-size:.8rem; letter-spacing:.05em; }
+    .empty-state .emoji { font-size:2rem; display:block; margin-bottom:12px; }
+
+    .toast {
+      position:fixed; bottom:28px; left:50%;
+      transform:translateX(-50%) translateY(20px);
+      background:var(--card); border:1px solid var(--border);
+      border-radius:99px; padding:10px 22px; font-size:.78rem;
+      letter-spacing:.06em; opacity:0; pointer-events:none; z-index:300;
+      transition:opacity .3s, transform .3s;
+    }
+    .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+    .toast.success { border-color:var(--income); color:var(--income); }
+    .toast.error   { border-color:var(--expense); color:var(--expense); }
+    .toast.info    { border-color:var(--accent); color:var(--accent); }
+
+    @keyframes fadeUp { from{opacity:0;transform:translateY(18px)} to{opacity:1;transform:translateY(0)} }
+
+    @media (max-width:680px) {
+      header { padding:14px 18px; }
+      .wrapper { padding:20px 14px 0; }
+      .summary { grid-template-columns:1fr 1fr; }
+      .summary-card:last-child { grid-column:span 2; }
+      .main-grid { grid-template-columns:1fr; }
+      .card-value { font-size:1.55rem; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Ledger<span>.</span></div>
+  <div class="header-date" id="headerDate"></div>
+</header>
+
+<div class="wrapper">
+  <div class="summary">
+    <div class="summary-card income">
+      <div class="card-label">Total Income</div>
+      <div class="card-value income" id="totalIncome">&#8377;0</div>
+    </div>
+    <div class="summary-card expense">
+      <div class="card-label">Total Expenses</div>
+      <div class="card-value expense" id="totalExpense">&#8377;0</div>
+    </div>
+    <div class="summary-card balance">
+      <div class="card-label">Net Balance</div>
+      <div class="card-value balance" id="netBalance">&#8377;0</div>
+    </div>
+  </div>
+
+  <div class="budget-bar-wrap">
+    <div class="bar-header">
+      <span class="bar-label">Expense Ratio</span>
+      <span class="bar-pct" id="barPct">0%</span>
+    </div>
+    <div class="bar-track"><div class="bar-fill" id="barFill" style="width:0%"></div></div>
+  </div>
+
+  <div class="main-grid">
+    <div class="form-panel">
+      <div class="panel-title">New Entry</div>
+      <div class="type-toggle">
+        <button class="toggle-btn income active" id="typeIncome" onclick="setType('income')">+ Income</button>
+        <button class="toggle-btn expense" id="typeExpense" onclick="setType('expense')">&#8722; Expense</button>
+      </div>
+      <div class="field">
+        <label>Description</label>
+        <input id="desc" type="text" placeholder="e.g. Freelance payment"/>
+      </div>
+      <div class="field">
+        <label>Amount (&#8377;)</label>
+        <input id="amount" type="number" placeholder="0.00" min="0" step="0.01"/>
+      </div>
+      <div class="field">
+        <label>Category</label>
+        <select id="category">
+          <option value="General">General</option>
+          <option value="Food">Food &amp; Dining</option>
+          <option value="Transport">Transport</option>
+          <option value="Shopping">Shopping</option>
+          <option value="Bills">Bills &amp; Utilities</option>
+          <option value="Health">Health</option>
+          <option value="Entertainment">Entertainment</option>
+          <option value="Salary">Salary</option>
+          <option value="Investment">Investment</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+      <button class="add-btn" onclick="addTransaction()">Add Entry</button>
+    </div>
+
+    <div class="txn-panel">
+      <div class="txn-header">
+        <div class="panel-title" style="margin-bottom:0">History</div>
+        <button class="clear-btn" onclick="clearAll()">Clear All</button>
+      </div>
+      <div class="filter-row">
+        <button class="filter-btn active" onclick="setFilter('all',this)">All</button>
+        <button class="filter-btn" onclick="setFilter('income',this)">Income</button>
+        <button class="filter-btn" onclick="setFilter('expense',this)">Expense</button>
+      </div>
+      <div class="txn-list" id="txnList"></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="editModal">
+  <div class="modal">
+    <div class="modal-title">Edit Entry</div>
+    <div class="type-toggle">
+      <button class="toggle-btn income active" id="editTypeIncome" onclick="setEditType('income')">+ Income</button>
+      <button class="toggle-btn expense" id="editTypeExpense" onclick="setEditType('expense')">&#8722; Expense</button>
+    </div>
+    <div class="field">
+      <label>Description</label>
+      <input id="editDesc" type="text"/>
+    </div>
+    <div class="field">
+      <label>Amount (&#8377;)</label>
+      <input id="editAmount" type="number" min="0" step="0.01"/>
+    </div>
+    <div class="field">
+      <label>Category</label>
+      <select id="editCategory">
+        <option value="General">General</option>
+        <option value="Food">Food &amp; Dining</option>
+        <option value="Transport">Transport</option>
+        <option value="Shopping">Shopping</option>
+        <option value="Bills">Bills &amp; Utilities</option>
+        <option value="Health">Health</option>
+        <option value="Entertainment">Entertainment</option>
+        <option value="Salary">Salary</option>
+        <option value="Investment">Investment</option>
+        <option value="Other">Other</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeEdit()">Cancel</button>
+      <button class="btn-save" onclick="saveEdit()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  let transactions = JSON.parse(localStorage.getItem('ledger_txns') || '[]');
+  let currentType   = 'income';
+  let currentFilter = 'all';
+  let editId   = null;
+  let editType = 'income';
+
+  document.getElementById('headerDate').textContent =
+    new Date().toLocaleDateString('en-IN', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+
+  function save() { localStorage.setItem('ledger_txns', JSON.stringify(transactions)); }
+
+  function setType(t) {
+    currentType = t;
+    document.getElementById('typeIncome').classList.toggle('active', t==='income');
+    document.getElementById('typeExpense').classList.toggle('active', t==='expense');
+  }
+  function setEditType(t) {
+    editType = t;
+    document.getElementById('editTypeIncome').classList.toggle('active', t==='income');
+    document.getElementById('editTypeExpense').classList.toggle('active', t==='expense');
+  }
+
+  function fmt(n) {
+    return '\u20B9' + Math.abs(n).toLocaleString('en-IN', { minimumFractionDigits:2, maximumFractionDigits:2 });
+  }
+
+  function addTransaction() {
+    const desc   = document.getElementById('desc').value.trim();
+    const amount = parseFloat(document.getElementById('amount').value);
+    const cat    = document.getElementById('category').value;
+    if (!desc)              { toast('Enter a description', 'error'); return; }
+    if (!amount || amount<=0){ toast('Enter a valid amount', 'error'); return; }
+    transactions.unshift({
+      id: Date.now(), type: currentType, desc, amount, cat,
+      date: new Date().toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' })
+    });
+    save(); render();
+    document.getElementById('desc').value = '';
+    document.getElementById('amount').value = '';
+    toast((currentType==='income'?'Income':'Expense') + ' added!', 'success');
+  }
+
+  function deleteTransaction(id) {
+    transactions = transactions.filter(t => t.id !== id);
+    save(); render(); toast('Entry removed', 'info');
+  }
+
+  function openEdit(id) {
+    const t = transactions.find(x => x.id===id);
+    if (!t) return;
+    editId = id;
+    setEditType(t.type);
+    document.getElementById('editDesc').value     = t.desc;
+    document.getElementById('editAmount').value   = t.amount;
+    document.getElementById('editCategory').value = t.cat;
+    document.getElementById('editModal').classList.add('open');
+  }
+  function closeEdit() {
+    document.getElementById('editModal').classList.remove('open');
+    editId = null;
+  }
+  function saveEdit() {
+    const desc   = document.getElementById('editDesc').value.trim();
+    const amount = parseFloat(document.getElementById('editAmount').value);
+    const cat    = document.getElementById('editCategory').value;
+    if (!desc || !amount || amount<=0) { toast('Fill all fields', 'error'); return; }
+    const idx = transactions.findIndex(x => x.id===editId);
+    if (idx>-1) {
+      transactions[idx] = { ...transactions[idx], type:editType, desc, amount, cat };
+      save(); render(); closeEdit(); toast('Entry updated', 'success');
+    }
+  }
+
+  function setFilter(f, btn) {
+    currentFilter = f;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    render();
+  }
+
+  function clearAll() {
+    if (!transactions.length) return;
+    if (!confirm('Clear all transactions? This cannot be undone.')) return;
+    transactions = [];
+    save(); render(); toast('All entries cleared', 'info');
+  }
+
+  function render() {
+    const totalInc = transactions.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
+    const totalExp = transactions.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);
+    const net = totalInc - totalExp;
+
+    document.getElementById('totalIncome').textContent  = fmt(totalInc);
+    document.getElementById('totalExpense').textContent = fmt(totalExp);
+    const balEl = document.getElementById('netBalance');
+    balEl.textContent = (net<0 ? '\u2212' : '') + fmt(net);
+    balEl.classList.toggle('negative', net<0);
+
+    const pct  = totalInc>0 ? Math.min((totalExp/totalInc)*100,100) : (totalExp>0?100:0);
+    const fill = document.getElementById('barFill');
+    fill.style.width = pct + '%';
+    fill.classList.toggle('danger', pct>75);
+    document.getElementById('barPct').textContent = pct.toFixed(0) + '%';
+
+    const filtered = currentFilter==='all' ? transactions
+      : transactions.filter(t => t.type===currentFilter);
+
+    const list = document.getElementById('txnList');
+    if (!filtered.length) {
+      list.innerHTML = '<div class="empty-state"><span class="emoji">\uD83D\uDCED</span>No entries yet.<br>Add your first transaction.</div>';
+      return;
+    }
+    list.innerHTML = filtered.map(t => `
+      <div class="txn-item">
+        <div class="txn-dot ${t.type}"></div>
+        <div class="txn-info">
+          <div class="txn-name">${esc(t.desc)}</div>
+          <div class="txn-meta">${esc(t.cat)} &middot; ${t.date}</div>
+        </div>
+        <div class="txn-amount ${t.type}">${t.type==='income'?'+':'\u2212'}${fmt(t.amount)}</div>
+        <div class="txn-actions">
+          <button class="icon-btn edit" onclick="openEdit(${t.id})" title="Edit">&#9998;</button>
+          <button class="icon-btn del"  onclick="deleteTransaction(${t.id})" title="Delete">&times;</button>
+        </div>
+      </div>`).join('');
+  }
+
+  function esc(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  let toastTimer;
+  function toast(msg, type='info') {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.className = 'toast ' + type + ' show';
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key==='Enter' && document.getElementById('editModal').classList.contains('open')) saveEdit();
+    if (e.key==='Escape') closeEdit();
+  });
+
+  render();
+</script>
+</body>
+</html>
