@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Personal Finance Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600;8..60,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+</head>
+<body>
+
+<div class="app-shell">
+
+  <!-- ============================================================
+       SIDEBAR / NAVIGATION
+       ============================================================ -->
+  <nav class="sidebar" aria-label="Primary">
+    <div class="brand">
+      <span class="brand-mark">Finance</span>
+      <span class="brand-sub">Dashboard</span>
+    </div>
+    <div class="nav" role="tablist" aria-label="Sections">
+      <button class="nav-item active" data-view="dashboard" role="tab" aria-selected="true">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="5" rx="1"/><rect x="13" y="11" width="8" height="10" rx="1"/><rect x="3" y="14" width="8" height="7" rx="1"/></svg>
+        Dashboard
+      </button>
+      <button class="nav-item" data-view="transactions" role="tab" aria-selected="false">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+        Transactions
+      </button>
+    </div>
+    <button class="sidebar-add" id="btn-add-txn">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg>
+      <span class="label">Add transaction</span>
+    </button>
+    <div class="sidebar-data">
+      <div class="sidebar-data-label">Data</div>
+      <button class="sidebar-mini-btn" id="btn-export-json">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+        Export as JSON
+      </button>
+      <button class="sidebar-mini-btn" id="btn-export-csv">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+        Export as CSV
+      </button>
+      <button class="sidebar-mini-btn" id="btn-import">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21V9m0 0l-4 4m4-4l4 4M4 7V5a2 2 0 012-2h12a2 2 0 012 2v2"/></svg>
+        Import JSON
+      </button>
+      <input type="file" id="import-file" accept="application/json">
+      <button class="sidebar-mini-btn" id="btn-reset-demo">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12a9 9 0 1 0 3-6.7M3 4v5h5"/></svg>
+        Reset demo data
+      </button>
+      <button class="sidebar-mini-btn danger" id="btn-clear-all">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h16M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2m2 0v13a1 1 0 01-1 1H7a1 1 0 01-1-1V7h12z"/></svg>
+        Clear all data
+      </button>
+    </div>
+  </nav>
+
+  <!-- ============================================================
+       MAIN
+       ============================================================ -->
+  <main class="main">
+
+    <div class="main-header">
+      <div class="titles">
+        <h1 id="page-title">Dashboard</h1>
+        <div class="date-line" id="page-date"></div>
+      </div>
+      <button class="header-add-btn" id="btn-add-txn-2">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg>
+        Add transaction
+      </button>
+    </div>
+
+    <!-- ---------------- DASHBOARD VIEW ---------------- -->
+    <section class="view active" id="view-dashboard">
+
+      <div class="stat-grid">
+        <div class="stat-card balance">
+          <div class="stat-label">Total balance</div>
+          <div class="stat-value num" id="stat-balance">₹0.00</div>
+          <div class="stat-sub">Income minus expenses, all time</div>
+        </div>
+        <div class="stat-card income">
+          <div class="stat-label">Total income</div>
+          <div class="stat-value num" id="stat-income">₹0.00</div>
+          <div class="stat-sub" id="stat-income-month">This month: ₹0.00</div>
+        </div>
+        <div class="stat-card expense">
+          <div class="stat-label">Total expenses</div>
+          <div class="stat-value num" id="stat-expense">₹0.00</div>
+          <div class="stat-sub" id="stat-expense-month">This month: ₹0.00</div>
+        </div>
+        <div class="stat-card count">
+          <div class="stat-label">Transactions</div>
+          <div class="stat-value num" id="stat-count">0</div>
+          <div class="stat-sub">Logged all time</div>
+        </div>
+      </div>
+
+      <div class="dash-grid">
+        <div class="panel">
+          <div class="panel-title">Income vs. expenses</div>
+          <div class="panel-desc">Last six months, compared side by side</div>
+          <div class="month-bars" id="month-bars"></div>
+          <div class="legend-row">
+            <div class="legend-item"><span class="legend-dot" style="background:var(--income)"></span>Income</div>
+            <div class="legend-item"><span class="legend-dot" style="background:var(--expense)"></span>Expenses</div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-title">Expense breakdown</div>
+          <div class="panel-desc">By category, all time</div>
+          <div class="donut-wrap" id="donut-wrap">
+            <svg id="donut-svg" width="120" height="120" viewBox="0 0 120 120"></svg>
+            <div class="donut-list" id="donut-list"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel trend-panel">
+        <div class="panel-title">Balance trend</div>
+        <div class="panel-desc">Running balance over your most recent transactions</div>
+        <svg class="trend-svg" id="trend-svg" viewBox="0 0 600 130" preserveAspectRatio="none"></svg>
+      </div>
+
+      <div class="panel recent-panel">
+        <div class="panel-title">Recent transactions</div>
+        <div class="panel-desc">Your last 6 entries</div>
+        <div class="recent-list" id="recent-list"></div>
+      </div>
+    </section>
+
+    <!-- ---------------- TRANSACTIONS VIEW ---------------- -->
+    <section class="view" id="view-transactions">
+      <div class="toolbar">
+        <input type="search" id="search-input" placeholder="Search description or category…" aria-label="Search transactions">
+        <select id="filter-type" aria-label="Filter by type">
+          <option value="all">All types</option>
+          <option value="income">Income only</option>
+          <option value="expense">Expense only</option>
+        </select>
+        <select id="filter-category" aria-label="Filter by category">
+          <option value="all">All categories</option>
+        </select>
+        <select id="filter-month" aria-label="Filter by month">
+          <option value="all">All time</option>
+        </select>
+        <select id="sort-by" aria-label="Sort transactions">
+          <option value="date-desc">Newest first</option>
+          <option value="date-asc">Oldest first</option>
+          <option value="amount-desc">Amount: high to low</option>
+          <option value="amount-asc">Amount: low to high</option>
+        </select>
+        <span class="result-count" id="result-count"></span>
+      </div>
+
+      <div class="txn-table-wrap">
+        <table class="txn-table">
+          <thead>
+            <tr>
+              <th class="sortable" data-sort="date">Date <span class="arrow">▾</span></th>
+              <th>Description</th>
+              <th>Category</th>
+              <th>Type</th>
+              <th class="sortable" data-sort="amount">Amount <span class="arrow">▾</span></th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="txn-tbody"></tbody>
+        </table>
+      </div>
+      <div class="txn-cards" id="txn-cards"></div>
+      <div class="empty-state" id="txn-empty" style="display:none;">
+        <div class="es-title">No transactions match</div>
+        <div>Try clearing filters, or add a new transaction.</div>
+        <button id="empty-add-btn">Add a transaction</button>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ============================================================
+     ADD / EDIT TRANSACTION MODAL
+     ============================================================ -->
+<div class="overlay" id="txn-overlay" role="dialog" aria-modal="true" aria-labelledby="txn-modal-title">
+  <div class="modal">
+    <div class="modal-head">
+      <h2 id="txn-modal-title">Add transaction</h2>
+      <button class="modal-close" id="txn-modal-close" aria-label="Close">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+    <form id="txn-form" novalidate>
+      <input type="hidden" id="f-id">
+      <div class="type-toggle" role="radiogroup" aria-label="Transaction type">
+        <button type="button" id="f-type-expense" class="selected expense" data-type="expense" role="radio" aria-checked="true">Expense</button>
+        <button type="button" id="f-type-income" class="income" data-type="income" role="radio" aria-checked="false">Income</button>
+      </div>
+
+      <div class="field" id="field-desc">
+        <label for="f-desc">Description</label>
+        <input type="text" id="f-desc" maxlength="80" placeholder="e.g. Groceries at Market Co-op" autocomplete="off">
+        <div class="field-error">Enter a description.</div>
+      </div>
+
+      <div class="field-row">
+        <div class="field" id="field-amount">
+          <label for="f-amount">Amount</label>
+          <div class="amount-input-wrap">
+            <span class="currency">₹</span>
+            <input type="number" id="f-amount" min="0.01" step="0.01" placeholder="0.00">
+          </div>
+          <div class="field-error">Enter an amount greater than 0.</div>
+        </div>
+        <div class="field" id="field-date">
+          <label for="f-date">Date</label>
+          <input type="date" id="f-date">
+          <div class="field-error">Choose a date.</div>
+        </div>
+      </div>
+
+      <div class="field" id="field-category">
+        <label for="f-category">Category</label>
+        <select id="f-category"></select>
+        <div class="field-error">Choose a category.</div>
+      </div>
+
+      <div class="field">
+        <label for="f-notes">Notes <span style="color:var(--muted); font-weight:400;">(optional)</span></label>
+        <textarea id="f-notes" maxlength="200" placeholder="Any extra detail worth remembering…"></textarea>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn" id="txn-cancel-btn">Cancel</button>
+        <button type="submit" class="btn primary" id="txn-save-btn">Save transaction</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ============================================================
+     CONFIRM DIALOG (delete / clear all)
+     ============================================================ -->
+<div class="overlay" id="confirm-overlay" role="alertdialog" aria-modal="true" aria-labelledby="confirm-title">
+  <div class="modal confirm-modal">
+    <div class="modal-head">
+      <h2 id="confirm-title">Are you sure?</h2>
+    </div>
+    <p id="confirm-body"></p>
+    <div class="modal-actions">
+      <button type="button" class="btn" id="confirm-cancel">Cancel</button>
+      <button type="button" class="btn danger" id="confirm-ok">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-stack" id="toast-stack" aria-live="polite"></div>
+
+<script src="js/storage.js"></script>
+<script src="js/calculations.js"></script>
+<script src="js/transactions.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
